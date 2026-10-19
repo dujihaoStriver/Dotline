@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 :root {
+  /* 系统字体栈（不依赖 Google Fonts，国内构建更稳） */
+  --dx-font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI",
+    "Microsoft YaHei", system-ui, sans-serif;
+  --dx-font-display: "Songti SC", "STSong", "SimSun", serif;
+  --dx-font-mono: ui-monospace, "SFMono-Regular", Consolas, Menlo, monospace;
+  --font-body: var(--dx-font-body);
+  --font-display: var(--dx-font-display);
+  --font-mono: var(--dx-font-mono);
   --paper: #e9eef1;
   --paper-deep: #dfe7ec;
   --surface: #f7fafb;
@@ -27,9 +35,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-body);
-  --font-display: var(--font-display);
-  --font-mono: var(--font-mono);
+  --font-sans: var(--dx-font-body);
+  --font-display: var(--dx-font-display);
+  --font-mono: var(--dx-font-mono);
 }
 
 html,
@@ -44,7 +52,7 @@ body {
     radial-gradient(640px 320px at 50% 110%, #e2ebe6 0%, transparent 45%),
     linear-gradient(180deg, #f2f5f7 0%, var(--paper) 42%, var(--paper-deep) 100%);
   color: var(--ink);
-  font-family: var(--font-body), "Noto Sans SC", sans-serif;
+  font-family: var(--dx-font-body);
   letter-spacing: 0.01em;
   text-rendering: optimizeLegibility;
 }
@@ -73,7 +81,7 @@ body > * {
 }
 
 .font-display {
-  font-family: var(--font-display), "Noto Serif SC", serif;
+  font-family: var(--dx-font-display);
   letter-spacing: -0.02em;
 }
 
