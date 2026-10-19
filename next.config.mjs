@@ -1,10 +1,8 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  // 帽子云等静态托管
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // 必须：帽子云静态托管只认 out 目录
   output: "export",
   images: { unoptimized: true },
-  // 本地 / 构建时正确处理 Tailwind v4
   turbopack: {
     rules: {
       "*.css": {
