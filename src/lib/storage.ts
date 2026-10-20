@@ -110,9 +110,10 @@ export function listReviews(): Review[] {
   return getSnapshot().reviews;
 }
 
+/** 新任务追加到末尾，按添加顺序排列（值越大越靠后） */
 function nextPriority(tasks: Task[]): number {
   if (!tasks.length) return 0;
-  return Math.min(...tasks.map((t) => t.priority)) - 1;
+  return Math.max(...tasks.map((t) => t.priority)) + 1;
 }
 
 export function upsertTask(

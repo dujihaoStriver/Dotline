@@ -215,24 +215,104 @@ function collapsedMonthWidth(monthKey: string): number {
   return 78 + daysInMonth(monthKey) * 2.6;
 }
 
+/** 估算 SVG 中 9px 任务标题的宽度（中文约 9px，英文/数字约 5.2px） */
+function estimateTaskLabelWidth(text: string): number {
+  let width = 0;
+  for (const ch of text) {
+    if (/\s/.test(ch)) width += 3;
+    else if (ch.charCodeAt(0) > 255) width += 9;
+    else width += 5.2;
+  }
+  return width;
+}
+
+/**
+ * 每个日期列需要的半宽：
+ * 未展开只保留日期圆宽度；展开后按当天最长任务标题自适应。
+ */
+function dayHalfWidths(
+  week: ReturnType<typeof weeksOverlappingMonth>[number],
+  tasks: Task[],
+  expandedWeeks: Set<string>,
+  expandedDays: Set<string>,
+): number[] {
+  if (!expandedWeeks.has(week.weekKey)) {
+    return week.daysInMonth.map(() => R.day + 3);
+  }
+
+  return week.daysInMonth.map((day) => {
+    if (!expandedDays.has(day)) return R.day + 3;
+
+    const singles = tasksOnDay(tasks, day)
+      .filter((t) => !isMultiDay(t))
+      .sort(
+        (a, b) =>
+          a.priority - b.priority || a.createdAt.localeCompare(b.createdAt),
+      );
+    if (!singles.length) return 30;
+
+    let seq = 0;
+    let widest = 0;
+    for (const task of singles) {
+      const label = task.title.slice(0, 10);
+      const text = task.done
+        ? `✓ ${label}`
+        : `${(seq += 1)}. ${label}`;
+      widest = Math.max(widest, estimateTaskLabelWidth(text));
+    }
+    return Math.max(30, widest / 2 + 7);
+  });
+}
+
+/** 根据每列半宽生成非均匀日期位置，相邻列至少保留 10px 净空 */
+function dayOffsets(
+  week: ReturnType<typeof weeksOverlappingMonth>[number],
+  tasks: Task[],
+  expandedWeeks: Set<string>,
+  expandedDays: Set<string>,
+): { offsets: number[]; span: number; halfWidths: number[] } {
+  const halfWidths = dayHalfWidths(week, tasks, expandedWeeks, expandedDays);
+  const offsets = [0];
+  for (let i = 1; i < week.daysInMonth.length; i++) {
+    const distance = Math.max(
+      DAY_GAP,
+      halfWidths[i - 1] + halfWidths[i] + 10,
+    );
+    offsets.push(offsets[i - 1] + distance);
+  }
+  return { offsets, span: offsets[offsets.length - 1] ?? 0, halfWidths };
+}
+
 function weekSlotWidth(
   week: ReturnType<typeof weeksOverlappingMonth>[number],
   expandedWeeks: Set<string>,
+  expandedDays: Set<string> = new Set(),
+  tasks: Task[] = [],
 ): number {
   if (!expandedWeeks.has(week.weekKey)) return WEEK_COLLAPSED;
-  const n = Math.max(week.daysInMonth.length, 1);
-  return Math.max(WEEK_COLLAPSED, (n - 1) * DAY_GAP + 56);
+  const { span, halfWidths } = dayOffsets(
+    week,
+    tasks,
+    expandedWeeks,
+    expandedDays,
+  );
+  const needed =
+    span + (halfWidths[0] ?? 0) + (halfWidths[halfWidths.length - 1] ?? 0) + 16;
+  return Math.max(WEEK_COLLAPSED, needed);
 }
 
 export function monthSlotWidth(
   monthKey: string,
   expandedMonths: Set<string>,
   expandedWeeks: Set<string>,
+  expandedDays: Set<string> = new Set(),
+  tasks: Task[] = [],
 ): number {
   if (!expandedMonths.has(monthKey)) return collapsedMonthWidth(monthKey);
   const weeks = weeksOverlappingMonth(monthKey);
   const inner = weeks.reduce(
-    (sum, week) => sum + weekSlotWidth(week, expandedWeeks),
+    (sum, week) =>
+      sum + weekSlotWidth(week, expandedWeeks, expandedDays, tasks),
     0,
   );
   return Math.max(collapsedMonthWidth(monthKey), inner + 36);
@@ -242,11 +322,19 @@ export function buildMonthXs(
   yearKey: string,
   expandedMonths: Set<string>,
   expandedWeeks: Set<string>,
+  expandedDays: Set<string> = new Set(),
+  tasks: Task[] = [],
 ): { xs: Map<string, number>; width: number } {
   const xs = new Map<string, number>();
   let cursor = YEAR_X + 86;
   for (const monthKey of monthKeysInYear(yearKey)) {
-    const w = monthSlotWidth(monthKey, expandedMonths, expandedWeeks);
+    const w = monthSlotWidth(
+      monthKey,
+      expandedMonths,
+      expandedWeeks,
+      expandedDays,
+      tasks,
+    );
     xs.set(monthKey, cursor + w / 2);
     cursor += w;
   }
@@ -334,6 +422,8 @@ export function buildYearGraphLayout(input: {
     yearKey,
     expandedMonths,
     expandedWeeks,
+    expandedDays,
+    tasks,
   );
 
   const yearTasks = tasksInRange(tasks, `${yearKey}-01-01`, `${yearKey}-12-31`);
@@ -378,7 +468,13 @@ export function buildYearGraphLayout(input: {
         (!t.done ||
           (t.startDate >= range.start && t.startDate <= range.end)),
     );
-    const slotW = monthSlotWidth(monthKey, expandedMonths, expandedWeeks);
+    const slotW = monthSlotWidth(
+      monthKey,
+      expandedMonths,
+      expandedWeeks,
+      expandedDays,
+      tasks,
+    );
 
     nodes.push({
       id: monthId,
@@ -453,7 +549,7 @@ export function buildYearGraphLayout(input: {
     let weekCursor = monthX - slotW / 2 + 18;
 
     weeks.forEach((week) => {
-      const slot = weekSlotWidth(week, expandedWeeks);
+      const slot = weekSlotWidth(week, expandedWeeks, expandedDays, tasks);
       const weekX = weekCursor + slot / 2;
       weekCursor += slot;
 
@@ -505,12 +601,17 @@ export function buildYearGraphLayout(input: {
 
       if (!weekExpanded) return;
 
-      const daySpanW = (week.daysInMonth.length - 1) * DAY_GAP;
+      const { offsets: dayOffsetList, span: daySpanW } = dayOffsets(
+        week,
+        tasks,
+        expandedWeeks,
+        expandedDays,
+      );
       const dayStartX = weekX - daySpanW / 2;
       const dayXMap = new Map<string, number>();
 
       week.daysInMonth.forEach((day, di) => {
-        const dayX = dayStartX + di * DAY_GAP;
+        const dayX = dayStartX + (dayOffsetList[di] ?? 0);
         dayXMap.set(day, dayX);
         const dayId = `day:${day}`;
         const dayExpanded = expandedDays.has(day);
@@ -584,7 +685,7 @@ export function buildYearGraphLayout(input: {
         const h = segment === "head" ? FRAME_H : FRAME_RAIL;
         const laneTop = frameBandTop + lane * LANE_SLOT;
         const y = laneTop + (FRAME_H - h) / 2;
-        const padX = covered.length > 1 ? DAY_GAP * 0.28 : R.day * 0.6;
+        const padX = covered.length > 1 ? 14 : R.day * 0.6;
         const frame: GraphFrame = {
           id: `frame:${task.id}:${week.weekKey}`,
           taskId: task.id,

@@ -280,8 +280,10 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
     weeks: Set<string>,
     monthKey: string,
     s = 0.72,
+    days: Set<string> = new Set(),
   ) {
-    const monthX = buildMonthXs(yKey, months, weeks).xs.get(monthKey) ?? 200;
+    const monthX =
+      buildMonthXs(yKey, months, weeks, days, tasks).xs.get(monthKey) ?? 200;
     const viewW = viewportRef.current?.clientWidth ?? 900;
     commitView({ x: viewW / 2 - monthX * s, y: 24 }, s);
   }
@@ -300,7 +302,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
     setExpandedMonths(months);
     setExpandedWeeks(weeks);
     setExpandedDays(days);
-    cameraToMonth(y, months, weeks, getMonthKey(now));
+    cameraToMonth(y, months, weeks, getMonthKey(now), 0.72, days);
   }
 
   useEffect(() => {
@@ -312,10 +314,11 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
     if (getYearKey(now) === yearKey) {
       const months = new Set([getMonthKey(now)]);
       const weeks = new Set([getWeekKey(now)]);
+      const days = new Set([toDateKey(now)]);
       setExpandedMonths(months);
       setExpandedWeeks(weeks);
-      setExpandedDays(new Set([toDateKey(now)]));
-      cameraToMonth(yearKey, months, weeks, getMonthKey(now));
+      setExpandedDays(days);
+      cameraToMonth(yearKey, months, weeks, getMonthKey(now), 0.72, days);
     } else {
       const months = new Set([`${yearKey}-01`]);
       setExpandedMonths(months);
@@ -1248,21 +1251,30 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                       );
                     })}
                     {typeof node.taskCount === "number" &&
-                    (node.kind === "month" || node.kind === "week") &&
+                    (node.kind === "month" ||
+                      node.kind === "week" ||
+                      node.kind === "day") &&
                     !node.expanded &&
-                    !node.hintColors?.length ? (
+                    (node.kind === "day"
+                      ? node.taskCount > 0
+                      : !node.hintColors?.length) ? (
                       <g
-                        transform={`translate(${node.r * 0.7}, ${-node.r * 0.7})`}
+                        transform={`translate(${node.r * 0.72}, ${-node.r * 0.72})`}
                       >
-                        <circle r={7.5} fill={node.color} />
+                        <circle
+                          r={node.taskCount > 9 ? 8.5 : 7.5}
+                          fill={node.color}
+                          stroke="#fff"
+                          strokeWidth={1.2}
+                        />
                         <text
                           textAnchor="middle"
                           dominantBaseline="central"
                           fill="#fff"
-                          fontSize={8}
+                          fontSize={node.taskCount > 9 ? 7 : 8}
                           fontWeight={700}
                         >
-                          {node.taskCount}
+                          {node.taskCount > 99 ? "99+" : node.taskCount}
                         </text>
                       </g>
                     ) : null}
