@@ -781,6 +781,7 @@ export function buildYearGraphLayout(input: {
             return;
           }
           const seq = task.done ? undefined : singleSeq.get(task.id);
+          const carryMark = task.carriedFrom && !task.done ? "↻" : "";
           nodes.push({
             id: `task:${task.id}:${day}`,
             kind: "task",
@@ -791,8 +792,8 @@ export function buildYearGraphLayout(input: {
             sublabel: task.done
               ? "完成"
               : seq
-                ? `${seq}. ${task.title.slice(0, 8)}`
-                : task.title.slice(0, 10),
+                ? `${carryMark}${seq}. ${task.title.slice(0, 8)}`
+                : `${carryMark}${task.title.slice(0, 10)}`,
             color: task.color,
             done: task.done,
             day,

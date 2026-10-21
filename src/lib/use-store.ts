@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { toDateKey } from "./dates";
 import {
+  carryOverIncompleteDayTasks,
   clearAll,
   deleteTask,
   exportJson,
@@ -15,6 +17,16 @@ import {
   upsertTask,
 } from "./storage";
 import type { Review, Task } from "./types";
+
+/** 进入任意页面时：把过期未完成的单日待办结转到今天（跨午夜也会再跑） */
+export function useDayCarryOver() {
+  useEffect(() => {
+    const run = () => carryOverIncompleteDayTasks(toDateKey(new Date()));
+    run();
+    const id = window.setInterval(run, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+}
 
 export function useStore() {
   const snapshot = useSyncExternalStore(

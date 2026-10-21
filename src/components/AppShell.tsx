@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { useDayCarryOver } from "@/lib/use-store";
 
 const nav = [
   { href: "/", label: "脉络" },
@@ -23,6 +24,7 @@ export function AppShell({
   /** Full-viewport canvas layout for graph views */
   wide?: boolean;
 }) {
+  useDayCarryOver();
   const pathname = usePathname();
   const activeIndex = nav.findIndex((item) =>
     item.href === "/"

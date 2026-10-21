@@ -12,6 +12,26 @@ type Listener = () => void;
 
 let memoryCache: StoreSnapshot | null = null;
 const listeners = new Set<Listener>();
+/** 本会话已对哪一天跑过结转，避免重复写盘 */
+let carriedForDay: string | null = null;
+
+/** 把 ISO 时刻挪到新日期，保留时分秒 */
+function shiftIsoToDate(iso: string | null, dateKey: string): string | null {
+  if (!iso) return null;
+  const prev = new Date(iso);
+  if (Number.isNaN(prev.getTime())) return iso;
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const next = new Date(
+    y,
+    m - 1,
+    d,
+    prev.getHours(),
+    prev.getMinutes(),
+    prev.getSeconds(),
+    prev.getMilliseconds(),
+  );
+  return next.toISOString();
+}
 
 type LegacyTask = Partial<Task> & {
   id?: string;
@@ -104,6 +124,37 @@ export function getStoreSnapshot(): StoreSnapshot {
 
 export function listTasks(): Task[] {
   return getSnapshot().tasks;
+}
+
+/**
+ * 未完成的「单日」待办：结束日早于今天 → 整条挪到今天。
+ * carriedFrom 记最初安排日；跨日/长期任务不处理。
+ * @returns 结转条数
+ */
+export function carryOverIncompleteDayTasks(todayKey: string): number {
+  if (!todayKey || carriedForDay === todayKey) return 0;
+  const snap = getSnapshot();
+  const now = new Date().toISOString();
+  let count = 0;
+  const tasks = snap.tasks.map((t) => {
+    // 仅单日、未完成、已过期
+    if (t.done) return t;
+    if (t.startDate !== t.endDate) return t;
+    if (t.endDate >= todayKey) return t;
+    count += 1;
+    return {
+      ...t,
+      carriedFrom: t.carriedFrom ?? t.startDate,
+      startDate: todayKey,
+      endDate: todayKey,
+      startAt: shiftIsoToDate(t.startAt, todayKey),
+      endAt: shiftIsoToDate(t.endAt, todayKey),
+      updatedAt: now,
+    };
+  });
+  carriedForDay = todayKey;
+  if (count > 0) writeRaw({ ...snap, tasks });
+  return count;
 }
 
 export function listReviews(): Review[] {
@@ -262,6 +313,7 @@ export function importJson(raw: string): void {
     .filter((t): t is Task => Boolean(t))
     .sort((a, b) => a.priority - b.priority || a.createdAt.localeCompare(b.createdAt))
     .map((t, i) => ({ ...t, priority: i }));
+  carriedForDay = null;
   writeRaw({
     tasks,
     reviews: Array.isArray(parsed.reviews) ? parsed.reviews : [],
@@ -269,5 +321,6 @@ export function importJson(raw: string): void {
 }
 
 export function clearAll(): void {
+  carriedForDay = null;
   writeRaw(empty);
 }

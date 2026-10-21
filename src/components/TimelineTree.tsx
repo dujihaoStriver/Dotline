@@ -92,6 +92,9 @@ function DayAside({
         {isMultiDayTask(task) ? (
           <span className="shrink-0 text-[10px] text-[var(--muted)]">跨日</span>
         ) : null}
+        {task.carriedFrom && !task.done ? (
+          <span className="shrink-0 text-[10px] text-[var(--muted)]">结转</span>
+        ) : null}
       </button>
     );
   }
@@ -745,7 +748,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
       ) : null}
 
       <p className="shrink-0 text-[11px] tracking-wide text-[var(--muted)] sm:text-xs">
-        拖动排序 · 双击完成 · 滚轮缩放
+        拖动排序 · 双击完成 · 未完成单日自动结转 · 滚轮缩放
         {currentWeekKey ? ` · 本周 ${currentWeekKey}` : ""}
       </p>
 

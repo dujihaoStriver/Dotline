@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { colorWithAlpha } from "@/lib/colors";
-import { formatDateRange, formatTime } from "@/lib/dates";
+import { formatDateRange, formatShortDate, formatTime } from "@/lib/dates";
 import type { Task } from "@/lib/types";
 import { TaskForm, type TaskFormValue } from "./TaskForm";
 
@@ -83,6 +83,11 @@ export function ExpandableTask({
                   style={{ backgroundColor: task.color }}
                 >
                   跨日
+                </span>
+              ) : null}
+              {task.carriedFrom ? (
+                <span className="rounded-md bg-[var(--chip)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+                  结转自 {formatShortDate(task.carriedFrom)}
                 </span>
               ) : null}
               {task.kind === "timed" ? (
