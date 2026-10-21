@@ -133,6 +133,7 @@ export default function TodayPage() {
           defaultStartDate={date}
           defaultEndDate={date}
           defaultColor={nextTaskColor(tasks.map((t) => t.color))}
+          usedColors={tasks.map((t) => t.color)}
           onSubmit={(input) => saveTask(input)}
         />
 

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { TASK_COLORS } from "@/lib/colors";
+import { useEffect, useState, type FormEvent } from "react";
+import { nextTaskColor, TASK_COLORS } from "@/lib/colors";
 
 type Props = {
   defaultStart: string;
   defaultColor: string;
+  /** 已有任务颜色，添加后据此自动切到下一个颜色 */
+  usedColors?: string[];
   emptyHint?: boolean;
   onAdd: (input: {
     title: string;
@@ -18,6 +20,7 @@ type Props = {
 export function QuickAddBar({
   defaultStart,
   defaultColor,
+  usedColors = [],
   emptyHint,
   onAdd,
 }: Props) {
@@ -26,19 +29,27 @@ export function QuickAddBar({
   const [endDate, setEndDate] = useState(defaultStart);
   const [color, setColor] = useState(defaultColor);
 
+  useEffect(() => {
+    setStartDate(defaultStart);
+    setEndDate(defaultStart);
+  }, [defaultStart]);
+
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
     const safeEnd = endDate >= startDate ? endDate : startDate;
+    const usedColor = color;
     onAdd({
       title: title.trim(),
       startDate,
       endDate: safeEnd,
-      color,
+      color: usedColor,
     });
     setTitle("");
     setStartDate(defaultStart);
     setEndDate(defaultStart);
+    // 连续添加时自动换色：把刚用过的颜色计入，再选使用次数最少的
+    setColor(nextTaskColor([...usedColors, usedColor]));
   }
 
   return (
@@ -73,7 +84,7 @@ export function QuickAddBar({
           className="dx-input rounded-xl px-2.5 py-1.5 text-xs"
         />
         <div className="flex items-center gap-1.5 rounded-full bg-[var(--chip)]/70 px-1.5 py-1">
-          {TASK_COLORS.slice(0, 6).map((c) => (
+          {TASK_COLORS.slice(0, 8).map((c) => (
             <button
               key={c}
               type="button"

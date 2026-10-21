@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { TASK_COLORS } from "@/lib/colors";
+import { nextTaskColor, TASK_COLORS } from "@/lib/colors";
 import { combineDateAndTime } from "@/lib/dates";
 import type { Task, TaskKind } from "@/lib/types";
 
@@ -24,6 +24,8 @@ type Props = {
   defaultStartDate: string;
   defaultEndDate?: string;
   defaultColor?: string;
+  /** 已有任务颜色，新建提交后自动切到下一个 */
+  usedColors?: string[];
   onSubmit: (input: TaskFormValue) => void;
   initial?: Task | null;
   onCancel?: () => void;
@@ -34,6 +36,7 @@ export function TaskForm({
   defaultStartDate,
   defaultEndDate,
   defaultColor,
+  usedColors = [],
   onSubmit,
   initial,
   onCancel,
@@ -66,13 +69,14 @@ export function TaskForm({
     e.preventDefault();
     if (!title.trim()) return;
     const safeEnd = endDate >= startDate ? endDate : startDate;
+    const usedColor = color;
     onSubmit({
       title,
       note,
       kind,
       startDate,
       endDate: safeEnd,
-      color,
+      color: usedColor,
       startAt:
         kind === "timed" ? combineDateAndTime(startDate, startTime) : null,
       endAt: kind === "timed" ? combineDateAndTime(safeEnd, endTime) : null,
@@ -84,6 +88,7 @@ export function TaskForm({
     if (!initial) {
       setTitle("");
       setNote("");
+      setColor(nextTaskColor([...usedColors, usedColor]));
     }
   }
 

@@ -247,7 +247,9 @@ function dayHalfWidths(
       .filter((t) => !isMultiDay(t))
       .sort(
         (a, b) =>
-          a.priority - b.priority || a.createdAt.localeCompare(b.createdAt),
+          Number(a.done) - Number(b.done) ||
+          a.priority - b.priority ||
+          a.createdAt.localeCompare(b.createdAt),
       );
     if (!singles.length) return 30;
 
@@ -521,7 +523,9 @@ export function buildYearGraphLayout(input: {
       .filter((t) => multiVisibleInWeek(t, monthDayKeys))
       .sort(
         (a, b) =>
-          a.priority - b.priority || a.createdAt.localeCompare(b.createdAt),
+          Number(a.done) - Number(b.done) ||
+          a.priority - b.priority ||
+          a.createdAt.localeCompare(b.createdAt),
       );
     const monthLaneMap = assignLanes(
       monthMultiForLanes.map((t) => {
@@ -662,7 +666,9 @@ export function buildYearGraphLayout(input: {
         .filter((t) => multiVisibleInWeek(t, week.daysInMonth))
         .sort(
           (a, b) =>
-            a.priority - b.priority || a.createdAt.localeCompare(b.createdAt),
+            Number(a.done) - Number(b.done) ||
+            a.priority - b.priority ||
+            a.createdAt.localeCompare(b.createdAt),
         );
 
       multi.forEach((task) => {
@@ -734,12 +740,14 @@ export function buildYearGraphLayout(input: {
         const dayX = dayXMap.get(day);
         if (dayX == null) return;
         const dayId = `day:${day}`;
-        // 日下只挂「单日任务」，编号与长期分开
+        // 日下只挂「单日任务」：未完成在前、已完成沉底
         const singles = tasksOnDay(tasks, day)
           .filter((t) => !isMultiDay(t))
           .sort(
             (a, b) =>
-              a.priority - b.priority || a.createdAt.localeCompare(b.createdAt),
+              Number(a.done) - Number(b.done) ||
+              a.priority - b.priority ||
+              a.createdAt.localeCompare(b.createdAt),
           );
         const singleSeq = new Map<string, number>();
         singles

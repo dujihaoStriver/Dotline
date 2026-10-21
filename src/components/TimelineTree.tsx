@@ -718,6 +718,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
           key={todayKey}
           defaultStart={todayKey}
           defaultColor={nextTaskColor(tasks.map((t) => t.color))}
+          usedColors={tasks.map((t) => t.color)}
           emptyHint={yearTasks.length === 0}
           onAdd={({ title, startDate, endDate, color }) => {
             saveTask({

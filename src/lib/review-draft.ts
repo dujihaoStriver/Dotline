@@ -15,6 +15,8 @@ import type { Review, Task } from "./types";
 
 function sortTasks(tasks: Task[]): Task[] {
   return [...tasks].sort((a, b) => {
+    // 未完成在前，已完成沉底
+    if (a.done !== b.done) return a.done ? 1 : -1;
     if (a.priority !== b.priority) return a.priority - b.priority;
     if (a.startDate !== b.startDate) return a.startDate.localeCompare(b.startDate);
     if (a.kind === "timed" && b.kind === "timed") {
