@@ -28,12 +28,16 @@ export function ExpandableTask({
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const multiDay = task.startDate !== task.endDate;
+  const carriedAway = Boolean(task.carriedTo);
 
   return (
     <div
       className="dx-task-list-item overflow-hidden rounded-2xl border border-[var(--line)] shadow-[var(--shadow-soft)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]"
       style={{
-        background: colorWithAlpha(task.color, task.done ? 0.05 : 0.1),
+        background: colorWithAlpha(
+          task.color,
+          task.done || carriedAway ? 0.05 : 0.1,
+        ),
         borderLeftWidth: 3,
         borderLeftColor: task.color,
         ["--dx-delay" as string]: `${Math.min(index, 12) * 45}ms`,
@@ -41,7 +45,7 @@ export function ExpandableTask({
       onDoubleClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        onToggle(task.id);
+        if (!carriedAway) onToggle(task.id);
       }}
     >
       <div className="flex w-full items-start gap-2 px-3.5 py-3">
@@ -65,10 +69,10 @@ export function ExpandableTask({
           <span className="min-w-0 flex-1">
             <span
               className={`block text-sm font-medium text-[var(--ink)] ${
-                task.done ? "line-through opacity-60" : ""
+                task.done || carriedAway ? "line-through opacity-60" : ""
               }`}
             >
-              {!task.done && seq != null ? (
+              {!task.done && !carriedAway && seq != null ? (
                 <span className="mr-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-[var(--ink)]/[0.07] px-1 font-mono text-[11px] font-medium text-[var(--ink-soft)]">
                   {seq}
                 </span>
@@ -85,9 +89,13 @@ export function ExpandableTask({
                   跨日
                 </span>
               ) : null}
-              {task.carriedFrom ? (
+              {task.carriedTo ? (
                 <span className="rounded-md bg-[var(--chip)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
-                  结转自 {formatShortDate(task.carriedFrom)}
+                  已结转到 {formatShortDate(task.carriedTo)}
+                </span>
+              ) : task.carriedFrom ? (
+                <span className="rounded-md bg-[#b45309]/12 px-1.5 py-0.5 text-[10px] font-medium text-[#b45309]">
+                  昨未完 · 自 {formatShortDate(task.carriedFrom)}
                 </span>
               ) : null}
               {task.kind === "timed" ? (
@@ -102,9 +110,16 @@ export function ExpandableTask({
         <button
           type="button"
           aria-checked={task.done}
-          aria-label={task.done ? "标记为未完成" : "标记为完成"}
+          aria-label={
+            carriedAway
+              ? "已结转，原日留底"
+              : task.done
+                ? "标记为未完成"
+                : "标记为完成"
+          }
           role="checkbox"
-          className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-200"
+          disabled={carriedAway}
+          className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-200 disabled:cursor-default disabled:opacity-40"
           style={{
             borderColor: task.color,
             backgroundColor: task.done ? task.color : "transparent",
@@ -114,10 +129,12 @@ export function ExpandableTask({
           }}
           onClick={(e) => {
             e.stopPropagation();
-            onToggle(task.id);
+            if (!carriedAway) onToggle(task.id);
           }}
         >
-          {task.done ? (
+          {carriedAway ? (
+            <span className="text-[10px] text-[var(--muted)]">→</span>
+          ) : task.done ? (
             <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
               <path
                 d="M2.5 6.2 L5 8.6 L9.5 3.4"
@@ -148,7 +165,11 @@ export function ExpandableTask({
             )}
 
             <p className="text-[11px] text-[var(--muted)]">
-              {task.done ? "已完成 · 再双击可改回" : "双击卡片标记完成"}
+              {carriedAway
+                ? `未完成 · 已结转到 ${task.carriedTo}，此为原日留底`
+                : task.done
+                  ? "已完成 · 再双击可改回"
+                  : "双击卡片标记完成"}
             </p>
             <div className="flex flex-wrap gap-2">
               <button

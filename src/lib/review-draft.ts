@@ -15,8 +15,10 @@ import type { Review, Task } from "./types";
 
 function sortTasks(tasks: Task[]): Task[] {
   return [...tasks].sort((a, b) => {
-    // 未完成在前，已完成沉底
-    if (a.done !== b.done) return a.done ? 1 : -1;
+    // 未完成在前，已完成/已结转留底沉底
+    const inactiveA = a.done || Boolean(a.carriedTo);
+    const inactiveB = b.done || Boolean(b.carriedTo);
+    if (inactiveA !== inactiveB) return inactiveA ? 1 : -1;
     if (a.priority !== b.priority) return a.priority - b.priority;
     if (a.startDate !== b.startDate) return a.startDate.localeCompare(b.startDate);
     if (a.kind === "timed" && b.kind === "timed") {
@@ -29,13 +31,14 @@ function sortTasks(tasks: Task[]): Task[] {
 }
 
 function formatTaskLine(task: Task): string {
-  const mark = task.done ? "x" : " ";
+  const mark = task.done ? "x" : task.carriedTo ? "→" : " ";
+  const suffix = task.carriedTo ? `（已结转到 ${task.carriedTo}）` : "";
   const days = formatDateRange(task.startDate, task.endDate);
   if (task.kind === "timed") {
     const range = `${formatTime(task.startAt)}–${formatTime(task.endAt)}`;
-    return `- [${mark}] ${days} ${range} ${task.title}`;
+    return `- [${mark}] ${days} ${range} ${task.title}${suffix}`;
   }
-  return `- [${mark}] ${days} ${task.title}`;
+  return `- [${mark}] ${days} ${task.title}${suffix}`;
 }
 
 export function taskOverlapsRange(
@@ -89,7 +92,7 @@ export function buildWeekDraft(
   const { start, end } = weekRangeFromKey(weekKey);
   const inWeek = tasksInRange(tasks, start, end);
   const done = inWeek.filter((t) => t.done);
-  const open = inWeek.filter((t) => !t.done);
+  const open = inWeek.filter((t) => !t.done && !t.carriedTo);
 
   const insights = existing?.insights ?? "";
   const carryovers =
@@ -127,7 +130,7 @@ export function buildMonthDraft(
   const { start, end } = monthRangeFromKey(monthKey);
   const inMonth = tasksInRange(tasks, start, end);
   const done = inMonth.filter((t) => t.done);
-  const open = inMonth.filter((t) => !t.done);
+  const open = inMonth.filter((t) => !t.done && !t.carriedTo);
 
   const weekKeys = new Set(
     eachDateKey(start, end).map((d) => getWeekKey(parseDateKey(d))),

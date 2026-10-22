@@ -37,6 +37,10 @@ export type GraphNode = {
   priority?: number;
   /** 1-based order among incomplete tasks on that day; omitted when done */
   seq?: number;
+  /** 最初安排日 YYYY-MM-DD，有值表示从更早日期结转而来 */
+  carriedFrom?: string | null;
+  /** 已结转到的日期，有值表示这是原日留底 */
+  carriedTo?: string | null;
 };
 
 export type GraphEdge = {
@@ -159,7 +163,7 @@ function uniqueColors(items: Task[]): string[] {
 /** Incomplete tasks on a day, ranked 1..n by priority */
 export function dayTaskSeqMap(tasks: Task[], day: string): Map<string, number> {
   const list = tasksOnDay(tasks, day)
-    .filter((t) => !t.done)
+    .filter((t) => !t.done && !t.carriedTo)
     .sort(
       (a, b) =>
         a.priority - b.priority || a.createdAt.localeCompare(b.createdAt),
@@ -247,7 +251,7 @@ function dayHalfWidths(
       .filter((t) => !isMultiDay(t))
       .sort(
         (a, b) =>
-          Number(a.done) - Number(b.done) ||
+          Number(a.done || a.carriedTo) - Number(b.done || b.carriedTo) ||
           a.priority - b.priority ||
           a.createdAt.localeCompare(b.createdAt),
       );
@@ -259,7 +263,9 @@ function dayHalfWidths(
       const label = task.title.slice(0, 10);
       const text = task.done
         ? `✓ ${label}`
-        : `${(seq += 1)}. ${label}`;
+        : task.carriedTo
+          ? `→ ${label}`
+          : `${(seq += 1)}. ${label}`;
       widest = Math.max(widest, estimateTaskLabelWidth(text));
     }
     return Math.max(30, widest / 2 + 7);
@@ -740,18 +746,18 @@ export function buildYearGraphLayout(input: {
         const dayX = dayXMap.get(day);
         if (dayX == null) return;
         const dayId = `day:${day}`;
-        // 日下只挂「单日任务」：未完成在前、已完成沉底
+        // 日下只挂「单日任务」：未完成在前、已完成/已结转留底沉底
         const singles = tasksOnDay(tasks, day)
           .filter((t) => !isMultiDay(t))
           .sort(
             (a, b) =>
-              Number(a.done) - Number(b.done) ||
+              Number(a.done || a.carriedTo) - Number(b.done || b.carriedTo) ||
               a.priority - b.priority ||
               a.createdAt.localeCompare(b.createdAt),
           );
         const singleSeq = new Map<string, number>();
         singles
-          .filter((t) => !t.done)
+          .filter((t) => !t.done && !t.carriedTo)
           .forEach((t, i) => singleSeq.set(t.id, i + 1));
         const stack: (Task | null)[] =
           singles.length > 0 ? singles : [null];
@@ -781,7 +787,6 @@ export function buildYearGraphLayout(input: {
             return;
           }
           const seq = task.done ? undefined : singleSeq.get(task.id);
-          const carryMark = task.carriedFrom && !task.done ? "↻" : "";
           nodes.push({
             id: `task:${task.id}:${day}`,
             kind: "task",
@@ -792,8 +797,8 @@ export function buildYearGraphLayout(input: {
             sublabel: task.done
               ? "完成"
               : seq
-                ? `${carryMark}${seq}. ${task.title.slice(0, 8)}`
-                : `${carryMark}${task.title.slice(0, 10)}`,
+                ? `${seq}. ${task.title.slice(0, 8)}`
+                : task.title.slice(0, 10),
             color: task.color,
             done: task.done,
             day,
@@ -802,6 +807,8 @@ export function buildYearGraphLayout(input: {
             multiDay: false,
             priority: task.priority,
             seq,
+            carriedFrom: task.carriedFrom,
+            carriedTo: task.carriedTo,
           });
           edges.push({
             id: `${dayId}->task:${task.id}:${day}`,

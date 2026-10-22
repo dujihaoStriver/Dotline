@@ -17,6 +17,7 @@ export type TaskFormValue = {
   done: boolean;
   doneAt: string | null;
   carriedFrom: string | null;
+  carriedTo: string | null;
   priority?: number;
 };
 
@@ -83,6 +84,7 @@ export function TaskForm({
       done: initial?.done ?? false,
       doneAt: initial?.doneAt ?? null,
       carriedFrom: initial?.carriedFrom ?? null,
+      carriedTo: initial?.carriedTo ?? null,
       priority: initial?.priority,
     });
     if (!initial) {

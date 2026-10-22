@@ -66,6 +66,7 @@ function normalizeTask(raw: LegacyTask, usedColors: string[], index: number): Ta
     done: Boolean(raw.done),
     doneAt: raw.doneAt ?? null,
     carriedFrom: raw.carriedFrom ?? null,
+    carriedTo: raw.carriedTo ?? null,
     priority:
       typeof raw.priority === "number" && Number.isFinite(raw.priority)
         ? raw.priority
@@ -127,34 +128,47 @@ export function listTasks(): Task[] {
 }
 
 /**
- * 未完成的「单日」待办：结束日早于今天 → 整条挪到今天。
- * carriedFrom 记最初安排日；跨日/长期任务不处理。
+ * 未完成的「单日」待办：结束日早于今天 →
+ * 原日在原地留底（carriedTo=今天，不再操作），今天新建一条副本继续做。
+ * 副本 carriedFrom 记最初安排日；跨日/长期与已留底的不处理。
  * @returns 结转条数
  */
 export function carryOverIncompleteDayTasks(todayKey: string): number {
   if (!todayKey || carriedForDay === todayKey) return 0;
   const snap = getSnapshot();
   const now = new Date().toISOString();
-  let count = 0;
+  let nextPrio =
+    snap.tasks.length > 0
+      ? Math.max(...snap.tasks.map((t) => t.priority)) + 1
+      : 0;
+
+  const copies: Task[] = [];
   const tasks = snap.tasks.map((t) => {
-    // 仅单日、未完成、已过期
-    if (t.done) return t;
+    // 仅单日、未完成、未留底、已过期
+    if (t.done || t.carriedTo) return t;
     if (t.startDate !== t.endDate) return t;
     if (t.endDate >= todayKey) return t;
-    count += 1;
-    return {
+
+    copies.push({
       ...t,
+      id: createId(),
       carriedFrom: t.carriedFrom ?? t.startDate,
+      carriedTo: null,
       startDate: todayKey,
       endDate: todayKey,
       startAt: shiftIsoToDate(t.startAt, todayKey),
       endAt: shiftIsoToDate(t.endAt, todayKey),
+      priority: nextPrio++,
+      createdAt: now,
       updatedAt: now,
-    };
+    });
+    // 原日留底
+    return { ...t, carriedTo: todayKey, updatedAt: now };
   });
+
   carriedForDay = todayKey;
-  if (count > 0) writeRaw({ ...snap, tasks });
-  return count;
+  if (copies.length > 0) writeRaw({ ...snap, tasks: [...tasks, ...copies] });
+  return copies.length;
 }
 
 export function listReviews(): Review[] {
@@ -199,6 +213,7 @@ export function upsertTask(
     done: input.done,
     doneAt: input.doneAt,
     carriedFrom: input.carriedFrom ?? null,
+    carriedTo: input.carriedTo ?? existing?.carriedTo ?? null,
     priority:
       typeof input.priority === "number"
         ? input.priority
@@ -246,6 +261,8 @@ export function toggleTaskDone(id: string): Task | null {
   const snap = getSnapshot();
   const task = snap.tasks.find((t) => t.id === id);
   if (!task) return null;
+  // 原日留底已结转走，不再切换完成状态
+  if (task.carriedTo) return task;
   const done = !task.done;
   return upsertTask({
     ...task,

@@ -29,12 +29,12 @@ function TaskSection({
   onSave: (id: string, value: TaskFormValue) => void;
   emptyText: string;
 }) {
-  const openCount = tasks.filter((t) => !t.done).length;
+  const openCount = tasks.filter((t) => !t.done && !t.carriedTo).length;
   const seqById = useMemo(() => {
     const map = new Map<string, number>();
     let n = 0;
     for (const t of tasks) {
-      if (t.done) continue;
+      if (t.done || t.carriedTo) continue;
       n += 1;
       map.set(t.id, n);
     }

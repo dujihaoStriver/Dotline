@@ -84,7 +84,9 @@ function DayAside({
         />
         <span
           className={`min-w-0 flex-1 truncate text-xs ${
-            task.done ? "text-[var(--muted)] line-through" : "text-[var(--ink)]"
+            task.done || task.carriedTo
+              ? "text-[var(--muted)] line-through"
+              : "text-[var(--ink)]"
           }`}
         >
           {task.title}
@@ -92,8 +94,14 @@ function DayAside({
         {isMultiDayTask(task) ? (
           <span className="shrink-0 text-[10px] text-[var(--muted)]">跨日</span>
         ) : null}
-        {task.carriedFrom && !task.done ? (
-          <span className="shrink-0 text-[10px] text-[var(--muted)]">结转</span>
+        {task.carriedTo ? (
+          <span className="shrink-0 rounded-md bg-[var(--chip)] px-1 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+            已结转
+          </span>
+        ) : task.carriedFrom && !task.done ? (
+          <span className="shrink-0 rounded-md bg-[#b45309]/12 px-1 py-0.5 text-[10px] font-medium text-[#b45309]">
+            昨未完
+          </span>
         ) : null}
       </button>
     );
@@ -599,6 +607,10 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
 
   function markDone(id: string) {
     const task = tasks.find((t) => t.id === id);
+    if (task?.carriedTo) {
+      flash("已结转 · 原日留底");
+      return;
+    }
     const willComplete = !task?.done;
     toggleDone(id);
     flash(willComplete ? "已完成" : "已撤销完成");
@@ -736,6 +748,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
               done: false,
               doneAt: null,
               carriedFrom: null,
+              carriedTo: null,
             });
             const mk = startDate.slice(0, 7);
             const wk = getWeekKey(parseDateKey(startDate));
@@ -1034,6 +1047,10 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                   selection.taskId === node.taskId;
                 const justDone =
                   Boolean(node.taskId) && doneFlashId === node.taskId;
+                const carriedAway = Boolean(node.carriedTo);
+                const carriedIn = Boolean(
+                  node.carriedFrom && !node.carriedTo && !node.done,
+                );
                 const isDragging =
                   Boolean(node.taskId) && draggingTaskId === node.taskId;
                 const dropHere =
@@ -1164,7 +1181,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                         isTask && node.taskId && node.done ? "3 2" : undefined
                       }
                       filter="url(#node-shadow)"
-                      opacity={node.done ? 0.78 : 1}
+                      opacity={node.done ? 0.78 : carriedAway ? 0.45 : 1}
                     />
                     {isTask && node.taskId && node.done ? (
                       <g className={justDone ? "dx-check-pop" : undefined}>
@@ -1204,18 +1221,39 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                       >
                         {isTask
                           ? node.taskId
-                            ? node.seq != null
-                              ? String(node.seq)
-                              : node.label.slice(0, 2)
+                            ? carriedAway
+                              ? "→"
+                              : node.seq != null
+                                ? String(node.seq)
+                                : node.label.slice(0, 2)
                             : "+"
                           : node.label}
                       </text>
                     )}
+                    {node.kind === "task" &&
+                    node.taskId &&
+                    (carriedIn || carriedAway) ? (
+                      <text
+                        y={node.r + 11}
+                        textAnchor="middle"
+                        fill={carriedAway ? "#8a969f" : "#b45309"}
+                        fontSize={8}
+                        fontWeight={600}
+                      >
+                        {carriedAway ? "已结转" : "昨未完"}
+                      </text>
+                    ) : null}
                     <text
-                      y={node.r + 13}
+                      y={
+                        node.kind === "task" &&
+                        node.taskId &&
+                        (carriedIn || carriedAway)
+                          ? node.r + 22
+                          : node.r + 13
+                      }
                       textAnchor="middle"
                       fill={
-                        node.done
+                        node.done || carriedAway
                           ? "#8a969f"
                           : node.multiDay
                             ? node.color
@@ -1223,14 +1261,18 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                       }
                       fontSize={9}
                       fontWeight={node.multiDay ? 600 : 400}
-                      textDecoration={node.done ? "line-through" : undefined}
+                      textDecoration={
+                        node.done || carriedAway ? "line-through" : undefined
+                      }
                     >
                       {node.kind === "task" && node.taskId
                         ? node.done
                           ? `✓ ${node.label}`
-                          : node.seq != null
-                            ? `${node.seq}. ${node.label}`
-                            : node.label
+                          : carriedAway
+                            ? `→ ${node.label}`
+                            : node.seq != null
+                              ? `${node.seq}. ${node.label}`
+                              : node.label
                         : node.sublabel}
                     </text>
                     {node.hintColors?.map((c, i) => {
@@ -1469,7 +1511,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
           {selection?.type === "task" && selectedTask ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                {!selectedTask.done ? (
+                {!selectedTask.done && !selectedTask.carriedTo ? (
                   <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-[var(--ink)]/[0.07] px-1.5 font-mono text-[11px] font-medium text-[var(--ink-soft)]">
                     {dayTaskSeqMap(tasks, selection.day).get(selectedTask.id) ??
                       "·"}
@@ -1494,6 +1536,15 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
               <p className="text-xs text-[var(--muted)]">
                 {formatDateRange(selectedTask.startDate, selectedTask.endDate)}
               </p>
+              {selectedTask.carriedTo ? (
+                <p className="text-[11px] font-medium text-[var(--muted)]">
+                  未完成 · 已结转到 {selectedTask.carriedTo}（原日留底）
+                </p>
+              ) : selectedTask.carriedFrom && !selectedTask.done ? (
+                <p className="text-[11px] font-medium text-[#b45309]">
+                  昨未完 · 结转自 {selectedTask.carriedFrom}
+                </p>
+              ) : null}
               {selectedTask.done ? (
                 <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--accent-ink)]">
                   <span
@@ -1513,7 +1564,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                   </span>
                   已完成 · 再双击可撤销
                 </p>
-              ) : savedFlash ? (
+              ) : selectedTask.carriedTo ? null : savedFlash ? (
                 <p className="text-[11px] text-[var(--accent-ink)]">已保存</p>
               ) : (
                 <p className="text-[11px] text-[var(--muted)]">

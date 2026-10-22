@@ -18,6 +18,8 @@ export type Task = {
   done: boolean;
   doneAt: string | null;
   carriedFrom: string | null;
+  /** 已结转到哪一天 YYYY-MM-DD；有值表示这是原日留底，不再操作 */
+  carriedTo: string | null;
   /** Smaller = higher priority (drawn / listed first) */
   priority: number;
   createdAt: string;

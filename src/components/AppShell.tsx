@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useDayCarryOver } from "@/lib/use-store";
+import { WhatsNew } from "./WhatsNew";
 
 const nav = [
   { href: "/", label: "脉络" },
@@ -78,6 +79,7 @@ export function AppShell({
       <main
         className={`dx-fade-in min-h-0 ${wide ? "flex flex-1 flex-col" : "flex-1"}`}
       >
+        <WhatsNew />
         {children}
       </main>
 
