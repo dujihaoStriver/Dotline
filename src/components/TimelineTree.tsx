@@ -27,6 +27,7 @@ import {
   bridgePath,
   buildMonthXs,
   buildYearGraphLayout,
+  carriedDisplayColor,
   dayTaskSeqMap,
   edgePath,
   type GraphFrame,
@@ -80,7 +81,7 @@ function DayAside({
       >
         <span
           className="h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{ backgroundColor: task.color }}
+          style={{ backgroundColor: carriedDisplayColor(task) }}
         />
         <span
           className={`min-w-0 flex-1 truncate text-xs ${
@@ -100,7 +101,7 @@ function DayAside({
           </span>
         ) : task.carriedFrom && !task.done ? (
           <span className="shrink-0 rounded-md bg-[#b45309]/12 px-1 py-0.5 text-[10px] font-medium text-[#b45309]">
-            昨未完
+            遗留
           </span>
         ) : null}
       </button>
@@ -1213,7 +1214,9 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                               ? 11
                               : node.kind === "task"
                                 ? node.taskId
-                                  ? 9
+                                  ? carriedIn
+                                    ? 8
+                                    : 9
                                   : 13
                                 : 10
                         }
@@ -1223,31 +1226,29 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                           ? node.taskId
                             ? carriedAway
                               ? "→"
-                              : node.seq != null
-                                ? String(node.seq)
-                                : node.label.slice(0, 2)
+                              : carriedIn
+                                ? "遗留"
+                                : node.seq != null
+                                  ? String(node.seq)
+                                  : node.label.slice(0, 2)
                             : "+"
                           : node.label}
                       </text>
                     )}
-                    {node.kind === "task" &&
-                    node.taskId &&
-                    (carriedIn || carriedAway) ? (
+                    {node.kind === "task" && node.taskId && carriedAway ? (
                       <text
                         y={node.r + 11}
                         textAnchor="middle"
-                        fill={carriedAway ? "#8a969f" : "#b45309"}
+                        fill="#8a969f"
                         fontSize={8}
                         fontWeight={600}
                       >
-                        {carriedAway ? "已结转" : "昨未完"}
+                        已结转
                       </text>
                     ) : null}
                     <text
                       y={
-                        node.kind === "task" &&
-                        node.taskId &&
-                        (carriedIn || carriedAway)
+                        node.kind === "task" && node.taskId && carriedAway
                           ? node.r + 22
                           : node.r + 13
                       }
@@ -1519,7 +1520,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                 ) : null}
                 <span
                   className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: selectedTask.color }}
+                  style={{ backgroundColor: carriedDisplayColor(selectedTask) }}
                 />
                 <p className="font-display font-semibold text-[var(--ink)]">
                   {selectedTask.title}
@@ -1527,7 +1528,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                 {selectedTask.startDate !== selectedTask.endDate ? (
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] font-medium text-white"
-                    style={{ backgroundColor: selectedTask.color }}
+                    style={{ backgroundColor: carriedDisplayColor(selectedTask) }}
                   >
                     跨日
                   </span>
@@ -1542,14 +1543,14 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
                 </p>
               ) : selectedTask.carriedFrom && !selectedTask.done ? (
                 <p className="text-[11px] font-medium text-[#b45309]">
-                  昨未完 · 结转自 {selectedTask.carriedFrom}
+                  遗留 · 结转自 {selectedTask.carriedFrom}
                 </p>
               ) : null}
               {selectedTask.done ? (
                 <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--accent-ink)]">
                   <span
                     className="inline-flex h-4 w-4 items-center justify-center rounded-sm"
-                    style={{ backgroundColor: selectedTask.color }}
+                    style={{ backgroundColor: carriedDisplayColor(selectedTask) }}
                   >
                     <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden>
                       <path

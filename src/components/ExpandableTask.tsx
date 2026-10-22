@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { colorWithAlpha } from "@/lib/colors";
+import { CARRIED_OVER_COLOR, colorWithAlpha } from "@/lib/colors";
 import { formatDateRange, formatShortDate, formatTime } from "@/lib/dates";
 import type { Task } from "@/lib/types";
 import { TaskForm, type TaskFormValue } from "./TaskForm";
@@ -29,17 +29,21 @@ export function ExpandableTask({
   const [editing, setEditing] = useState(false);
   const multiDay = task.startDate !== task.endDate;
   const carriedAway = Boolean(task.carriedTo);
+  const displayColor =
+    task.carriedFrom && !task.carriedTo && !task.done
+      ? CARRIED_OVER_COLOR
+      : task.color;
 
   return (
     <div
       className="dx-task-list-item overflow-hidden rounded-2xl border border-[var(--line)] shadow-[var(--shadow-soft)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]"
       style={{
         background: colorWithAlpha(
-          task.color,
+          displayColor,
           task.done || carriedAway ? 0.05 : 0.1,
         ),
         borderLeftWidth: 3,
-        borderLeftColor: task.color,
+        borderLeftColor: displayColor,
         ["--dx-delay" as string]: `${Math.min(index, 12) * 45}ms`,
       }}
       onDoubleClick={(e) => {
@@ -57,9 +61,9 @@ export function ExpandableTask({
           <span
             className="mt-1 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border text-[10px]"
             style={{
-              backgroundColor: open ? task.color : "transparent",
-              borderColor: task.color,
-              color: open ? "#fff" : task.color,
+              backgroundColor: open ? displayColor : "transparent",
+              borderColor: displayColor,
+              color: open ? "#fff" : displayColor,
             }}
             aria-hidden
           >
@@ -84,7 +88,7 @@ export function ExpandableTask({
               {multiDay ? (
                 <span
                   className="rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white"
-                  style={{ backgroundColor: task.color }}
+                  style={{ backgroundColor: displayColor }}
                 >
                   跨日
                 </span>
@@ -95,7 +99,7 @@ export function ExpandableTask({
                 </span>
               ) : task.carriedFrom ? (
                 <span className="rounded-md bg-[#b45309]/12 px-1.5 py-0.5 text-[10px] font-medium text-[#b45309]">
-                  昨未完 · 自 {formatShortDate(task.carriedFrom)}
+                  遗留 · 自 {formatShortDate(task.carriedFrom)}
                 </span>
               ) : null}
               {task.kind === "timed" ? (
@@ -121,10 +125,10 @@ export function ExpandableTask({
           disabled={carriedAway}
           className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-200 disabled:cursor-default disabled:opacity-40"
           style={{
-            borderColor: task.color,
-            backgroundColor: task.done ? task.color : "transparent",
+            borderColor: displayColor,
+            backgroundColor: task.done ? displayColor : "transparent",
             boxShadow: task.done
-              ? `0 0 0 3px ${colorWithAlpha(task.color, 0.18)}`
+              ? `0 0 0 3px ${colorWithAlpha(displayColor, 0.18)}`
               : undefined,
           }}
           onClick={(e) => {

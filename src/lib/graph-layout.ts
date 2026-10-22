@@ -7,8 +7,16 @@ import {
   weekdayLabel,
   weeksOverlappingMonth,
 } from "./dates";
+import { CARRIED_OVER_COLOR } from "./colors";
 import { taskOnDay, tasksInRange, tasksOnDay } from "./review-draft";
 import type { Task } from "./types";
+
+/** 遗留任务统一用琥珀色显示，其余用任务自身颜色 */
+export function carriedDisplayColor(task: Task): string {
+  return task.carriedFrom && !task.carriedTo && !task.done
+    ? CARRIED_OVER_COLOR
+    : task.color;
+}
 
 export type GraphKind = "year" | "month" | "week" | "day" | "task";
 
@@ -98,6 +106,23 @@ export const SPINE_Y = 96;
 export const YEAR_X = 70;
 const DAY_GAP = 52;
 const TASK_GAP = 42;
+/** 带圈外「已结转」标签的留底任务多占一行（遗留写在圈内，不占行） */
+const TASK_CARRY_EXTRA = 14;
+
+function taskHasCarryLabel(task: Task): boolean {
+  return Boolean(task.carriedTo);
+}
+
+/** 单个任务在竖列中占的高度：有结转标签时自动撑高 */
+function taskSlotHeight(task: Task | null): number {
+  if (!task) return TASK_GAP;
+  return TASK_GAP + (taskHasCarryLabel(task) ? TASK_CARRY_EXTRA : 0);
+}
+
+function stackHeight(tasks: Task[]): number {
+  if (!tasks.length) return TASK_GAP;
+  return tasks.reduce((sum, t) => sum + taskSlotHeight(t), 0);
+}
 const WEEK_COLLAPSED = 72;
 const FRAME_H = 26;
 /** 续段/结束段也保持可读高度，方便显示任务名 */
@@ -376,16 +401,16 @@ function branchDepth(
   );
   if (!anyDayOpen) return depth;
 
-  let maxSingles = 1;
+  let maxStack = TASK_GAP;
   for (const w of weeks) {
     if (!expandedWeeks.has(w.weekKey)) continue;
     for (const d of w.daysInMonth) {
       if (!expandedDays.has(d)) continue;
-      const singles = tasksOnDay(tasks, d).filter((t) => !isMultiDay(t)).length;
-      maxSingles = Math.max(maxSingles, Math.max(singles, 1));
+      const singles = tasksOnDay(tasks, d).filter((t) => !isMultiDay(t));
+      maxStack = Math.max(maxStack, stackHeight(singles));
     }
   }
-  return depth + maxSingles * TASK_GAP + 24;
+  return depth + maxStack + 24;
 }
 
 export function buildYearGraphLayout(input: {
@@ -762,8 +787,16 @@ export function buildYearGraphLayout(input: {
         const stack: (Task | null)[] =
           singles.length > 0 ? singles : [null];
 
+        // 竖向自适应：带结转标签的任务多一行，逐个累加高度而非固定间距
+        const stackYs: number[] = [];
+        let cursorY = taskBaseY;
+        for (const t of stack) {
+          stackYs.push(cursorY);
+          cursorY += taskSlotHeight(t);
+        }
+
         stack.forEach((task, ti) => {
-          const taskY = taskBaseY + ti * TASK_GAP;
+          const taskY = stackYs[ti];
           if (!task) {
             const emptyId = `empty:${day}`;
             nodes.push({
@@ -799,7 +832,7 @@ export function buildYearGraphLayout(input: {
               : seq
                 ? `${seq}. ${task.title.slice(0, 8)}`
                 : task.title.slice(0, 10),
-            color: task.color,
+            color: carriedDisplayColor(task),
             done: task.done,
             day,
             monthKey,
@@ -814,7 +847,7 @@ export function buildYearGraphLayout(input: {
             id: `${dayId}->task:${task.id}:${day}`,
             from: dayId,
             to: `task:${task.id}:${day}`,
-            color: task.color,
+            color: carriedDisplayColor(task),
           });
         });
       });

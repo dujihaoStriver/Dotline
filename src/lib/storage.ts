@@ -1,6 +1,6 @@
 "use client";
 
-import { nextTaskColor, TASK_COLORS } from "./colors";
+import { CARRIED_OVER_COLOR, nextTaskColor, TASK_COLORS } from "./colors";
 import { createId } from "./id";
 import type { Review, StoreSnapshot, Task } from "./types";
 
@@ -152,6 +152,7 @@ export function carryOverIncompleteDayTasks(todayKey: string): number {
     copies.push({
       ...t,
       id: createId(),
+      color: CARRIED_OVER_COLOR,
       carriedFrom: t.carriedFrom ?? t.startDate,
       carriedTo: null,
       startDate: todayKey,

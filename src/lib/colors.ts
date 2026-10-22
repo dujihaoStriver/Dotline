@@ -16,6 +16,9 @@ export const TASK_COLORS = [
 
 export type TaskColor = (typeof TASK_COLORS)[number];
 
+/** 遗留（昨日未完成结转到今天）任务的统一颜色 */
+export const CARRIED_OVER_COLOR = "#b45309";
+
 export function nextTaskColor(used: string[]): string {
   const counts = new Map<string, number>();
   for (const c of TASK_COLORS) counts.set(c, 0);
