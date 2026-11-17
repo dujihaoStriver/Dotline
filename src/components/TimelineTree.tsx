@@ -287,10 +287,10 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
   const currentMonthKey = now ? getMonthKey(now) : null;
   const currentWeekKey = now ? getWeekKey(now) : null;
 
-  function flash(message: string) {
+  function flash(message: string, ms = 2000) {
     setToast(message);
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToast(null), 2000);
+    toastTimer.current = window.setTimeout(() => setToast(null), ms);
   }
 
   function cameraToMonth(
@@ -708,6 +708,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
 
   return (
     <div className="flex flex-1 flex-col gap-2.5 lg:min-h-0">
+      <Toast message={toast} />
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div className="dx-panel flex items-center gap-0.5 rounded-xl p-0.5">
           <button
@@ -853,7 +854,6 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
             backgroundSize: "20px 20px",
           }}
         >
-          <Toast message={toast} />
           <svg
             width="100%"
             height="100%"
@@ -1409,7 +1409,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
           <div className="shrink-0 rounded-xl border border-[var(--line)] bg-[var(--chip)]/40 p-2.5">
             <GithubSyncControls
               variant="compact"
-              onMessage={(msg) => flash(msg)}
+              onMessage={(msg) => flash(msg, 4500)}
             />
           </div>
           <div
