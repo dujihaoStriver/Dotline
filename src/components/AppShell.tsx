@@ -11,6 +11,10 @@ const nav = [
   { href: "/today", label: "今日" },
 ];
 
+/** 底部固定导航 + 浏览器底栏的预留高度 */
+const NAV_CLEARANCE =
+  "calc(8rem + env(safe-area-inset-bottom, 0px))";
+
 export function AppShell({
   title,
   subtitle,
@@ -39,8 +43,8 @@ export function AppShell({
       className={
         wide
           ? // 手机可整页下滑看到侧栏导出；大屏仍锁视口做双栏
-            "flex min-h-dvh w-full flex-col overflow-y-auto px-3 pb-[calc(11rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-5 lg:h-dvh lg:max-h-dvh lg:overflow-hidden lg:pb-4"
-          : "mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-[calc(11rem+env(safe-area-inset-bottom,0px))] pt-7 sm:px-6"
+            "flex min-h-dvh w-full flex-shrink-0 flex-col overflow-y-auto px-3 pt-3 sm:px-5 lg:h-dvh lg:max-h-dvh lg:overflow-hidden"
+          : "mx-auto flex min-h-full w-full max-w-3xl flex-shrink-0 flex-col px-4 pt-7 sm:px-6"
       }
     >
       <header
@@ -85,6 +89,13 @@ export function AppShell({
         <WhatsNew />
         {children}
       </main>
+
+      {/* 文档流占位：保证滑到底时内容在固定导航上方 */}
+      <div
+        aria-hidden
+        className="w-full shrink-0 lg:hidden"
+        style={{ height: NAV_CLEARANCE }}
+      />
 
       <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-20 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-4 sm:pb-4">
         <div
