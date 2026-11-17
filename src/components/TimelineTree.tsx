@@ -382,25 +382,80 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
   useEffect(() => {
     const el = viewportRef.current;
     if (!el) return;
-    const handler = (e: WheelEvent) => {
-      e.preventDefault();
+
+    const zoomAtClient = (clientX: number, clientY: number, nextScale: number) => {
       const { pan: curPan, scale: curScale } = viewRef.current;
-      const next = clamp(
-        curScale * (e.deltaY > 0 ? 0.9 : 1.1),
-        MIN_SCALE,
-        MAX_SCALE,
-      );
-      if (next === curScale) return;
-      const { x: mx, y: my } = clientToViewport(el, e.clientX, e.clientY);
+      const clamped = clamp(nextScale, MIN_SCALE, MAX_SCALE);
+      if (clamped === curScale) return;
+      const { x: mx, y: my } = clientToViewport(el, clientX, clientY);
       const wx = (mx - curPan.x) / curScale;
       const wy = (my - curPan.y) / curScale;
-      const nextPan = { x: mx - wx * next, y: my - wy * next };
-      applyWorldTransform(nextPan, next);
-      scheduleScaleUi(next);
+      const nextPan = { x: mx - wx * clamped, y: my - wy * clamped };
+      applyWorldTransform(nextPan, clamped);
+      scheduleScaleUi(clamped);
     };
-    el.addEventListener("wheel", handler, { passive: false });
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const { scale: curScale } = viewRef.current;
+      zoomAtClient(
+        e.clientX,
+        e.clientY,
+        curScale * (e.deltaY > 0 ? 0.9 : 1.1),
+      );
+    };
+
+    /** 双指捏合缩放（手机） */
+    let pinch: { startDist: number; startScale: number } | null = null;
+
+    const touchDist = (touches: TouchList) => {
+      const a = touches[0];
+      const b = touches[1];
+      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        panning.current = null;
+        taskDrag.current = null;
+        setDraggingTaskId(null);
+        setDragOverBeforeId(undefined);
+        pinch = {
+          startDist: Math.max(1, touchDist(e.touches)),
+          startScale: viewRef.current.scale,
+        };
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinch) {
+        e.preventDefault();
+        const d = Math.max(1, touchDist(e.touches));
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        zoomAtClient(midX, midY, pinch.startScale * (d / pinch.startDist));
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2 && pinch) {
+        pinch = null;
+        flushPanToReact();
+      }
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd);
+    el.addEventListener("touchcancel", onTouchEnd);
     return () => {
-      el.removeEventListener("wheel", handler);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
       if (panRaf.current != null) window.cancelAnimationFrame(panRaf.current);
       if (scaleUiRaf.current != null)
         window.cancelAnimationFrame(scaleUiRaf.current);
@@ -686,7 +741,8 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
         <div className="dx-panel flex items-center gap-0.5 rounded-xl p-0.5">
           <button
             type="button"
-            className="rounded-lg px-2.5 py-1 text-xs text-[var(--ink-soft)] transition-colors hover:bg-[var(--chip)]"
+            aria-label="缩小"
+            className="rounded-lg px-3 py-2 text-sm text-[var(--ink-soft)] transition-colors hover:bg-[var(--chip)] sm:px-2.5 sm:py-1 sm:text-xs"
             onClick={() => {
               const el = viewportRef.current;
               if (!el) return;
@@ -694,7 +750,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
               zoomToClient(
                 rect.left + rect.width / 2,
                 rect.top + rect.height / 2,
-                viewRef.current.scale / 1.15,
+                viewRef.current.scale / 1.2,
               );
             }}
           >
@@ -705,7 +761,8 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
           </span>
           <button
             type="button"
-            className="rounded-lg px-2.5 py-1 text-xs text-[var(--ink-soft)] transition-colors hover:bg-[var(--chip)]"
+            aria-label="放大"
+            className="rounded-lg px-3 py-2 text-sm text-[var(--ink-soft)] transition-colors hover:bg-[var(--chip)] sm:px-2.5 sm:py-1 sm:text-xs"
             onClick={() => {
               const el = viewportRef.current;
               if (!el) return;
@@ -713,7 +770,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
               zoomToClient(
                 rect.left + rect.width / 2,
                 rect.top + rect.height / 2,
-                viewRef.current.scale * 1.15,
+                viewRef.current.scale * 1.2,
               );
             }}
           >
@@ -763,7 +820,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
       ) : null}
 
       <p className="shrink-0 text-[11px] tracking-wide text-[var(--muted)] sm:text-xs">
-        拖动排序 · 双击完成 · 未完成单日自动结转 · 滚轮缩放
+        拖动排序 · 双击完成 · 未完成单日自动结转 · 滚轮/双指缩放
         {currentWeekKey ? ` · 本周 ${currentWeekKey}` : ""}
       </p>
 
@@ -774,8 +831,9 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          className="dx-panel relative min-h-[280px] flex-1 cursor-grab overflow-hidden rounded-[var(--radius-panel)] active:cursor-grabbing lg:min-h-0"
+          className="dx-panel relative min-h-[280px] flex-1 cursor-grab overflow-hidden rounded-[var(--radius-panel)] active:cursor-grabbing touch-none lg:min-h-0"
           style={{
+            touchAction: "none",
             backgroundColor: "color-mix(in oklab, var(--surface-solid) 90%, transparent)",
             backgroundImage:
               "radial-gradient(circle at 1px 1px, color-mix(in oklab, #121a21 9%, transparent) 1px, transparent 0)",

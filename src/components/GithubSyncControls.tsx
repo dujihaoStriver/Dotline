@@ -63,13 +63,21 @@ export function GithubSyncControls({
     setBusy(true);
     try {
       saveGithubToken(token);
-      const result = await pushSnapshotToGist(exportJson(), { token, gistId });
+      const json = exportJson();
+      let taskCount = 0;
+      try {
+        const parsed = JSON.parse(json) as { tasks?: unknown[] };
+        taskCount = Array.isArray(parsed.tasks) ? parsed.tasks.length : 0;
+      } catch {
+        // ignore
+      }
+      const result = await pushSnapshotToGist(json, { token, gistId });
       setGistId(result.gistId);
       saveGithubGistId(result.gistId);
       flash(
         result.created
-          ? `已上传（新建 Gist：${result.gistId}）`
-          : "已上传到 GitHub",
+          ? `已上传 ${taskCount} 条（新建 Gist：${result.gistId}）`
+          : `已上传 ${taskCount} 条到 GitHub`,
       );
     } catch (err) {
       flash(err instanceof Error ? err.message : "上传失败");
@@ -97,7 +105,18 @@ export function GithubSyncControls({
       saveGithubGistId(gistId);
       const raw = await pullSnapshotFromGist({ token, gistId });
       importJson(raw);
-      flash("已从 GitHub 拉取");
+      let taskCount = 0;
+      try {
+        const parsed = JSON.parse(raw) as { tasks?: unknown[] };
+        taskCount = Array.isArray(parsed.tasks) ? parsed.tasks.length : 0;
+      } catch {
+        // ignore
+      }
+      flash(
+        taskCount > 0
+          ? `已拉取 ${taskCount} 条待办，请到「今日」或展开对应日期查看`
+          : "已拉取，但云端 JSON 里待办是 0 条（电脑是否先点了「上传到云」？）",
+      );
     } catch (err) {
       flash(err instanceof Error ? err.message : "拉取失败");
     } finally {
