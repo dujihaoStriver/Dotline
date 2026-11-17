@@ -2,9 +2,16 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "点线 · 时间点备忘与周期复盘",
+  title: {
+    default: "点线",
+    template: "%s · 点线",
+  },
   description: "记录时间点任务，一键生成周 / 月 / 年总结底稿",
   applicationName: "点线",
+  icons: {
+    icon: [{ url: "/icon-512.png", sizes: "512x512", type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     title: "点线",
