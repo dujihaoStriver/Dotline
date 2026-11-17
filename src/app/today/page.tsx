@@ -128,7 +128,7 @@ export default function TodayPage() {
         </div>
       }
     >
-      <div className="dx-rise space-y-5">
+      <div className="dx-rise space-y-5 pb-8">
         <TaskForm
           defaultStartDate={date}
           defaultEndDate={date}
