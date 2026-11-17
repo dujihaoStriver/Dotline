@@ -6,7 +6,7 @@ export function BackupPanel() {
   const { exportJson, importJson, clearAll } = useStore();
 
   return (
-    <section className="border-t border-[var(--line)] pt-3.5 pb-2">
+    <section className="border-t border-[var(--line)] pt-3.5 pb-28 lg:pb-2">
       <h3 className="text-xs font-semibold tracking-wide text-[var(--ink)]">
         数据备份
       </h3>

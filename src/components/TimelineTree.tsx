@@ -1405,7 +1405,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
           </svg>
         </div>
 
-        <aside className="dx-panel flex flex-col gap-3 overflow-visible rounded-[var(--radius-panel)] p-3.5 lg:min-h-0 lg:overflow-y-auto">
+        <aside className="dx-panel mb-8 flex flex-col gap-3 overflow-visible rounded-[var(--radius-panel)] p-3.5 pb-4 lg:mb-0 lg:min-h-0 lg:overflow-y-auto lg:pb-3.5">
           <div className="shrink-0 rounded-xl border border-[var(--line)] bg-[var(--chip)]/40 p-2.5">
             <GithubSyncControls
               variant="compact"
