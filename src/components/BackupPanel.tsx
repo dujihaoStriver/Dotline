@@ -1,6 +1,7 @@
 "use client";
 
 import { useStore } from "@/lib/use-store";
+import { GithubSyncControls } from "./GithubSyncControls";
 
 export function BackupPanel() {
   const { exportJson, importJson, clearAll } = useStore();
@@ -58,6 +59,13 @@ export function BackupPanel() {
         >
           清空
         </button>
+      </div>
+
+      <div className="mt-4 border-t border-[var(--line)] pt-3.5">
+        <h3 className="mb-2 text-xs font-semibold tracking-wide text-[var(--ink)]">
+          GitHub 同步（详细设置）
+        </h3>
+        <GithubSyncControls variant="full" />
       </div>
     </section>
   );

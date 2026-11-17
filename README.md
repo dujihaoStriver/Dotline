@@ -26,7 +26,8 @@ npm run dev
 - `reviews`：`week` / `month` / `year`，按 `periodKey` 唯一
 
 当前持久化：**浏览器 localStorage**（键名 `dianxian.v1`）。  
-云同步 schema 见 `supabase/schema.sql`，跑通习惯后再接 Supabase。
+可选 **GitHub Gist 同步**（侧栏「GitHub 同步」）：本机保存 Token，手动上传/拉取整份 JSON。  
+更完整的账号云同步 schema 见 `supabase/schema.sql`。
 
 ## 复盘规则
 

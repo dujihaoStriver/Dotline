@@ -38,6 +38,7 @@ import type { Task } from "@/lib/types";
 import { useClientNow } from "@/lib/use-client-now";
 import { useStore } from "@/lib/use-store";
 import { BackupPanel } from "./BackupPanel";
+import { GithubSyncControls } from "./GithubSyncControls";
 import { QuickAddBar } from "./QuickAddBar";
 import { ReviewPanel } from "./ReviewPanel";
 import { TaskForm, type TaskFormValue } from "./TaskForm";
@@ -1334,6 +1335,12 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
         </div>
 
         <aside className="dx-panel flex max-h-[42vh] flex-col gap-3 overflow-y-auto rounded-[var(--radius-panel)] p-3.5 lg:max-h-none">
+          <div className="shrink-0 rounded-xl border border-[var(--line)] bg-[var(--chip)]/40 p-2.5">
+            <GithubSyncControls
+              variant="compact"
+              onMessage={(msg) => flash(msg)}
+            />
+          </div>
           <div
             key={
               selection

@@ -9,6 +9,14 @@ export type ChangelogEntry = {
 /** 最新在最前；发版时在顶部加一条，并更新 version */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "2026.11.16",
+    date: "2026-11-16",
+    items: [
+      "侧栏新增 GitHub 同步：把待办 JSON 上传到私有 Gist，电脑手机填同一 Token 与 Gist ID 即可拉取对齐",
+      "支持网址带 ?gist=xxx 自动填入 Gist ID",
+    ],
+  },
+  {
     version: "2026.10.22",
     date: "2026-10-22",
     items: [
