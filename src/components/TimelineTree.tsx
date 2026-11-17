@@ -51,10 +51,10 @@ function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
 
-/** 手机默认放大一点，避免脉络显得过小 */
+/** 手机默认约 75%，大屏约 72% */
 function defaultViewScale() {
   if (typeof window === "undefined") return 0.72;
-  return window.innerWidth < 1024 ? 1.05 : 0.72;
+  return window.innerWidth < 1024 ? 0.75 : 0.72;
 }
 
 type Selection =
