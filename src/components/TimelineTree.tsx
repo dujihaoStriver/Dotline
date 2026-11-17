@@ -51,6 +51,12 @@ function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
 
+/** 手机默认放大一点，避免脉络显得过小 */
+function defaultViewScale() {
+  if (typeof window === "undefined") return 0.72;
+  return window.innerWidth < 1024 ? 1.05 : 0.72;
+}
+
 type Selection =
   | { type: "year" }
   | { type: "month"; monthKey: string }
@@ -177,12 +183,12 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
   const [doneFlashId, setDoneFlashId] = useState<string | null>(null);
   const doneFlashTimer = useRef<number | null>(null);
 
-  const [scale, setScale] = useState(0.72);
+  const [scale, setScale] = useState(() => defaultViewScale());
   const [pan, setPan] = useState({ x: 20, y: 20 });
   const viewportRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<SVGGElement>(null);
   /** Latest pan/scale for wheel zoom (avoids stale state / nested setState). */
-  const viewRef = useRef({ pan: { x: 20, y: 20 }, scale: 0.72 });
+  const viewRef = useRef({ pan: { x: 20, y: 20 }, scale: defaultViewScale() });
   /** Skip React re-render while dragging the canvas; write transform to DOM. */
   const panRaf = useRef<number | null>(null);
   const scaleUiRaf = useRef<number | null>(null);
@@ -292,7 +298,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
     months: Set<string>,
     weeks: Set<string>,
     monthKey: string,
-    s = 0.72,
+    s = defaultViewScale(),
     days: Set<string> = new Set(),
   ) {
     const monthX =
@@ -315,7 +321,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
     setExpandedMonths(months);
     setExpandedWeeks(weeks);
     setExpandedDays(days);
-    cameraToMonth(y, months, weeks, getMonthKey(now), 0.72, days);
+    cameraToMonth(y, months, weeks, getMonthKey(now), defaultViewScale(), days);
   }
 
   useEffect(() => {
@@ -331,7 +337,14 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
       setExpandedMonths(months);
       setExpandedWeeks(weeks);
       setExpandedDays(days);
-      cameraToMonth(yearKey, months, weeks, getMonthKey(now), 0.72, days);
+      cameraToMonth(
+        yearKey,
+        months,
+        weeks,
+        getMonthKey(now),
+        defaultViewScale(),
+        days,
+      );
     } else {
       const months = new Set([`${yearKey}-01`]);
       setExpandedMonths(months);
@@ -694,7 +707,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
     selection?.type === "month" ? monthRangeFromKey(selection.monthKey) : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2.5">
+    <div className="flex flex-1 flex-col gap-2.5 lg:min-h-0">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div className="dx-panel flex items-center gap-0.5 rounded-xl p-0.5">
           <button
@@ -824,14 +837,14 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
         {currentWeekKey ? ` · 本周 ${currentWeekKey}` : ""}
       </p>
 
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_328px]">
+      <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_328px]">
         <div
           ref={viewportRef}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          className="dx-panel relative min-h-[280px] flex-1 cursor-grab overflow-hidden rounded-[var(--radius-panel)] active:cursor-grabbing touch-none lg:min-h-0"
+          className="dx-panel relative h-[48vh] min-h-[240px] max-h-[360px] shrink-0 cursor-grab overflow-hidden rounded-[var(--radius-panel)] active:cursor-grabbing touch-none sm:max-h-[420px] lg:h-auto lg:max-h-none lg:min-h-0 lg:flex-1"
           style={{
             touchAction: "none",
             backgroundColor: "color-mix(in oklab, var(--surface-solid) 90%, transparent)",
@@ -1392,7 +1405,7 @@ export function TimelineTree({ initialYearKey }: { initialYearKey: string }) {
           </svg>
         </div>
 
-        <aside className="dx-panel flex max-h-[42vh] flex-col gap-3 overflow-y-auto rounded-[var(--radius-panel)] p-3.5 lg:max-h-none">
+        <aside className="dx-panel flex flex-col gap-3 overflow-visible rounded-[var(--radius-panel)] p-3.5 lg:min-h-0 lg:overflow-y-auto">
           <div className="shrink-0 rounded-xl border border-[var(--line)] bg-[var(--chip)]/40 p-2.5">
             <GithubSyncControls
               variant="compact"

@@ -38,7 +38,8 @@ export function AppShell({
     <div
       className={
         wide
-          ? "flex h-dvh max-h-dvh w-full flex-col overflow-hidden px-3 pb-[5rem] pt-3 sm:px-5"
+          ? // 手机可整页下滑看到侧栏导出；大屏仍锁视口做双栏
+            "flex min-h-dvh w-full flex-col overflow-y-auto px-3 pb-[5.5rem] pt-3 sm:px-5 lg:h-dvh lg:max-h-dvh lg:overflow-hidden"
           : "mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-28 pt-7 sm:px-6"
       }
     >
@@ -77,7 +78,9 @@ export function AppShell({
       </header>
 
       <main
-        className={`dx-fade-in min-h-0 ${wide ? "flex flex-1 flex-col" : "flex-1"}`}
+        className={`dx-fade-in min-h-0 ${
+          wide ? "flex flex-1 flex-col lg:min-h-0" : "flex-1"
+        }`}
       >
         <WhatsNew />
         {children}
