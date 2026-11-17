@@ -39,7 +39,7 @@ export function AppShell({
       className={
         wide
           ? // 手机可整页下滑看到侧栏导出；大屏仍锁视口做双栏
-            "flex min-h-dvh w-full flex-col overflow-y-auto px-3 pb-[5.5rem] pt-3 sm:px-5 lg:h-dvh lg:max-h-dvh lg:overflow-hidden"
+            "flex min-h-dvh w-full flex-col overflow-y-auto px-3 pb-[7.5rem] pt-3 sm:px-5 lg:h-dvh lg:max-h-dvh lg:overflow-hidden lg:pb-4"
           : "mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-28 pt-7 sm:px-6"
       }
     >
