@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   applicationName: "点线",
   icons: {
     icon: [
-      { url: "/favicon.png?v=6", sizes: "32x32", type: "image/png" },
-      { url: "/icon-512.png?v=6", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.png?v=7", sizes: "32x32", type: "image/png" },
+      { url: "/icon-512.png?v=7", sizes: "512x512", type: "image/png" },
     ],
-    shortcut: "/favicon.png?v=6",
-    apple: [{ url: "/apple-touch-icon.png?v=6", sizes: "180x180", type: "image/png" }],
+    shortcut: "/favicon.png?v=7",
+    apple: [{ url: "/apple-touch-icon.png?v=7", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,
