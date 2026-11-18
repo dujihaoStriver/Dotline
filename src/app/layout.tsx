@@ -9,7 +9,11 @@ export const metadata: Metadata = {
   description: "记录时间点任务，一键生成周 / 月 / 年总结底稿",
   applicationName: "点线",
   icons: {
-    icon: [{ url: "/icon-512.png", sizes: "512x512", type: "image/png" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
